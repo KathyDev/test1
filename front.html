@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>Task 3</title>
+    <style>
+        * {
+            font-family: 'Courier New';
+            color: black;
+            background: white;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        header,
+        footer {
+            text-align: right;
+        }
+
+        body {
+            width: 95%;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 30px 30px;
+            justify-content: space-between;
+        }
+
+        .item {
+            height: 200px;
+        }
+    </style>
+</head>
+<body class="container">
+<header>
+    <div class="local-phone"><a href="tel:+74951234567">8-800-DIGITS</a></div>
+</header>
+<h1>Task 3</h1>
+<div class="grid">
+    <div class="item">
+        Вы работаете в компании, присутствующей в нескольких городах РФ?
+    </div>
+    <div class="item">
+        На сайте компании есть страница с контактной информацией?
+    </div>
+    <div class="item">
+        Маркетолог поставил задачу и уехал, к его приезду задача должна быть реализована?!
+    </div>
+</div>
+<div>
+    На страницу контактов заходят люди из разных городов, нужно чтобы они видели телефон из своего города.
+    По умолчанию, в HTML-страницы прописан телефон. Телефон размещен вверху и внизу страницы.
+    Вот и все, что рассказал маркетолог прежде чем уехать.
+</div>
+<h1>&#x1F631</h1>
+<footer>
+    <div class="local-phone"><a href="tel:8-800-DIGITS">8-800-DIGITS</a></div>
+</footer>
+<script>
+    let phonesDic = [
+        {
+            //Москва
+            lat: 55.7558,
+            lon: 37.6173,
+            phone: "8-495-DIGITS"
+        },
+        {
+            //СПБ
+            lat: 59.9311,
+            lon: 30.3609,
+            phone: "8-812-DIGITS"
+        },
+        {
+            //Курильск
+            lat: 45.2324,
+            lon: 147.8728,
+            phone: "8-42454-DIGITS"
+        },
+        {
+            //Мытищи
+            lat: 55.9249,
+            lon: 37.7552,
+            phone: "8-666-DIGITS"
+        }
+    ];
+
+
+    function distanceHelper(lat1, lon1, lat2, lon2) {
+        let p = 0.017453292519943295;    // Math.PI / 180
+        let cos = Math.cos;
+        let a = 0.5 - cos((lat2 - lat1) * p) / 2 +
+            cos(lat1 * p) * cos(lat2 * p) *
+            (1 - cos((lon2 - lon1) * p)) / 2;
+
+        return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
+    }
+
+    let options = {
+        method: "GET",
+        mode: "cors",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+    };
+
+    fetch('https://api.ipify.org?format=json'/*, options*/)
+        .then(response => response.json())
+        .then(result => {
+            let ip = result.ip;
+            if (!ip) {
+                return false;
+            }
+            let url = "https://suggestions.dadata.ru/suggestions/api/4_1/rs/iplocate/address?ip=";
+            let token = "9c93d0a5e92679f5e168f5c65c5ecd410215e377";
+
+            options.headers.Authorization = "Token " + token;
+            fetch(url + ip, options)
+                .then(response => response.json())
+                .then(result => {
+                    let res = result.location
+                    if (!res) {
+                        return;
+                    }
+                    let lat = res.data.geo_lat;
+                    let lon = res.data.geo_lon;
+                    let distance
+
+                    let minData = phonesDic.reduce(function(min, city) {
+                        distance = distanceHelper(lat, lon, city.lat, city.lon);
+                        if (distance < min[1]) {
+                            return [city.phone, distance]
+                        }
+                        return min
+                    }, [phonesDic[0].phone, distanceHelper(lat, lon, phonesDic[0].lat, phonesDic[0].lon)]);
+                    document.querySelectorAll('.local-phone').forEach(
+                        e => e.innerHTML = '<a href="tel:'+minData[0]+'">'+minData[0]+'</a>'
+                    );
+
+                })
+                .catch(error => console.log('Smthng went wrong', error));
+        }).catch(error => console.error('Smthng went wrong', error));
+</script>
+</body>
+</html>
+
+
